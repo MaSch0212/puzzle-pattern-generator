@@ -1,4 +1,4 @@
-# Cura Manager
+# Puzzle Pattern Generator
 Tool to generate Puzzle patterns.
 
 ## 🚀 Build Status
