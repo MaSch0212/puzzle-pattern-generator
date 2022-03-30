@@ -1,0 +1,42 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- General Project info -->
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <UseWPF>true</UseWPF>
+    <OutputPath>..\..\bin\$(Configuration)\</OutputPath>
+    <Nullable>disable</Nullable>
+
+    <!-- Output info -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputType>WinExe</OutputType>
+
+    <!-- Package Info -->
+    <Version>1.0.0</Version>
+    <Authors>Marc Schmidt</Authors>
+    <Copyright>Copyright © 2022 - $([System.DateTime]::Now.ToString('yyyy')) $(Authors)</Copyright>
+    <SupportedOSPlatform>windows</SupportedOSPlatform>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <OutputZipDir Condition=" '$(OutputZipDir)' == '' ">$(OutputPath)</OutputZipDir>
+    <OutputZipPath Condition=" '$(OutputZipPath)' == '' ">$(OutputZipDir)\$(AssemblyName)-$(Version)-$(RuntimeIdentifier).zip</OutputZipPath>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="MaSch.Core" Version="0.3.0" />
+    <PackageReference Include="MaSch.Generators" Version="0.3.3" />
+    <PackageReference Include="MaSch.Presentation" Version="0.2.4" />
+    <PackageReference Include="MaSch.Presentation.Wpf" Version="0.1.8" />
+    <PackageReference Include="MaSch.Presentation.Wpf.Controls" Version="0.2.6" />
+    <PackageReference Include="MaSch.Presentation.Wpf.MaterialDesign" Version="0.2.0" />
+    <PackageReference Include="MaSch.Presentation.Wpf.Themes" Version="0.1.12" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
+  </ItemGroup>
+  
+  <Target Name="PowerShellAfterPublish" AfterTargets="Publish">
+    <MakeDir Directories="$(OutputZipDir)" />
+    <ZipDirectory SourceDirectory="$(PublishDir)" DestinationFile="$(OutputZipPath)" Overwrite="true" />
+    <Message Text="##vso[task.setvariable variable=AppVersion;]$(Version)" Importance="high" />
+  </Target>
+</Project>
