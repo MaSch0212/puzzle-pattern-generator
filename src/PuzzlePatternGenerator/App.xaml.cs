@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using MaSch.Presentation.Services;
+using MaSch.Presentation.Wpf.Services;
+using Microsoft.Extensions.DependencyInjection;
 using PuzzlePatternGenerator.Services;
 using PuzzlePatternGenerator.ViewModels;
 using PuzzlePatternGenerator.Views;
@@ -26,6 +28,7 @@ namespace PuzzlePatternGenerator
             var services = new ServiceCollection();
 
             services.AddSingleton<IPuzzleGenerator, PuzzleGenerator>();
+            services.AddSingleton<IMessageBoxService, MessageBoxService>();
 
             services.AddScoped<MainViewModel>();
             services.AddScoped<MainView>();

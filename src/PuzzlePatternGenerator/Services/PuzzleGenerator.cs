@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 
@@ -13,28 +13,16 @@ namespace PuzzlePatternGenerator.Services
 {
     public class PuzzleGenerator : IPuzzleGenerator
     {
-        public Geometry GenerateGeometry(PuzzleGeneratorOptions options)
+        public async Task<Geometry> GenerateGeometryAsync(PuzzleGeneratorOptions options)
         {
             var result = new GeometryGroup();
 
-            var rowStepSize = options.Height / options.RowCount;
-            var colStepSize = options.Width / options.ColumnCount;
+            var (rowLinePoints, columnLinePoints) = await Task.Run(() => GeneratePoints(options));
 
-            for (int i = 1; i < options.RowCount; i++)
-            {
-                var swap = !options.IsBumpRandomizationEnabled ? i % 2 == 0 : (bool?)null;
-                var points = CreatePuzzleLinePoints(rowStepSize * i, options.ColumnCount, options.Width, rowStepSize, true, swap);
-                var geometry = MakeBezierPath(MakeCurvePoints(points, options.Tension));
-                result.Children.Add(geometry);
-            }
-
-            for (int i = 1; i < options.ColumnCount; i++)
-            {
-                var swap = !options.IsBumpRandomizationEnabled ? i % 2 == 1 : (bool?)null;
-                var points = CreatePuzzleLinePoints(colStepSize * i, options.RowCount, options.Height, colStepSize, false, swap);
-                var geometry = MakeBezierPath(MakeCurvePoints(points, options.Tension));
-                result.Children.Add(geometry);
-            }
+            foreach (var rowPoints in rowLinePoints)
+                result.Children.Add(MakeBezierPath(rowPoints));
+            foreach (var columnPoints in columnLinePoints)
+                result.Children.Add(MakeBezierPath(columnPoints));
 
             if (options.IsBorderEnabled)
             {
@@ -65,28 +53,54 @@ namespace PuzzlePatternGenerator.Services
             return result;
         }
 
-        public void SaveGeometryAsSvg(string filePath, Size size, Geometry geometry)
+        public async Task SaveGeometryAsSvgAsync(string filePath, Size size, Geometry geometry)
         {
-            var result = new StringBuilder();
+            using var writer = new StreamWriter(filePath, false);
+
             var strokeWith = Math.Max(size.Width, size.Height) / 1000;
-            result.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>")
-                .AppendLine("<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">")
-                .AppendLine($"<svg width=\"{size.Width}\" height=\"{size.Height}\">")
-                .AppendLine($"    <g fill=\"none\" stroke=\"black\" stroke-width=\"{strokeWith.ToString(CultureInfo.InvariantCulture)}\">");
+            await writer.WriteLineAsync("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>");
+            await writer.WriteLineAsync("<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">");
+            await writer.WriteLineAsync($"<svg width=\"{size.Width}\" height=\"{size.Height}\">");
+            await writer.WriteLineAsync($"    <g fill=\"none\" stroke=\"black\" stroke-width=\"{strokeWith.ToString(CultureInfo.InvariantCulture)}\">");
 
             var geometryGroup = (GeometryGroup)geometry;
             foreach (var pg in geometryGroup.Children.OfType<PathGeometry>())
             {
-                result.AppendLine($"        <path d=\"{pg.ToString(CultureInfo.InvariantCulture)}\"/>");
+                await writer.WriteLineAsync($"        <path d=\"{pg.ToString(CultureInfo.InvariantCulture)}\"/>");
             }
 
-            result.AppendLine("    </g>")
-                .AppendLine("</svg>");
+            await writer.WriteLineAsync("    </g>");
+            await writer.WriteLineAsync("</svg>");
 
-            File.WriteAllText(filePath, result.ToString());
+            await writer.FlushAsync();
         }
 
         #region Private Functions
+        private (IList<IList<Point>> RowsPoints, IList<IList<Point>> ColumnsPoints) GeneratePoints(PuzzleGeneratorOptions options)
+        {
+            var rowStepSize = options.Height / options.RowCount;
+            var colStepSize = options.Width / options.ColumnCount;
+
+            var rowLinePoints = new List<IList<Point>>();
+            var columnLinePoints = new List<IList<Point>>();
+
+            for (int i = 1; i < options.RowCount; i++)
+            {
+                var swap = !options.IsBumpRandomizationEnabled ? i % 2 == 0 : (bool?)null;
+                var points = CreatePuzzleLinePoints(rowStepSize * i, options.ColumnCount, options.Width, rowStepSize, true, swap);
+                rowLinePoints.Add(MakeCurvePoints(points, options.Tension));
+            }
+
+            for (int i = 1; i < options.ColumnCount; i++)
+            {
+                var swap = !options.IsBumpRandomizationEnabled ? i % 2 == 1 : (bool?)null;
+                var points = CreatePuzzleLinePoints(colStepSize * i, options.RowCount, options.Height, colStepSize, false, swap);
+                columnLinePoints.Add(MakeCurvePoints(points, options.Tension));
+            }
+
+            return (rowLinePoints, columnLinePoints);
+        }
+
         private static Point[] CreatePuzzleLinePoints(double startOffset, int pieces, double length, double width, bool horizontal, bool? swap)
         {
             IEnumerable<Point> result = Array.Empty<Point>();

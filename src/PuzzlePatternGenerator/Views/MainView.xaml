@@ -5,16 +5,26 @@
             xmlns:m="http://schemas.masch212.de/MaSch/Wpf"
             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
             xmlns:mct="http://schemas.masch212.de/MaSch/Wpf/Controls"
+            xmlns:mcv="http://schemas.masch212.de/MaSch/Wpf/Converter"
             xmlns:sys="clr-namespace:System;assembly=mscorlib"
             xmlns:vm="clr-namespace:PuzzlePatternGenerator.ViewModels"
+            Title="Puzzle Pattern Generator"
             Width="1000"
             Height="700"
             MinWidth="500"
             MinHeight="300"
             d:DataContext="{d:DesignInstance vm:MainViewModel}"
             Language="en-US"
-            mc:Ignorable="d"
-            Title="Puzzle Pattern Generator">
+            mc:Ignorable="d">
+    <mct:Window.CustomIcon>
+        <mct:IconPresenter Width="20"
+                           Height="20"
+                           VerticalAlignment="Top"
+                           Icon="{m:MaterialDesignIcon Icon=PuzzleStarOutline}" />
+    </mct:Window.CustomIcon>
+    <mct:Window.Resources>
+        <mcv:BoolNegationConverter x:Key="BoolNegation" />
+    </mct:Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition />
@@ -24,10 +34,26 @@
         <GroupBox Grid.Column="0"
                   Margin="0,0,15,0"
                   Header="Preview">
-            <Path Data="{Binding CurrentPuzzlePattern}"
-                  Stretch="Uniform"
-                  Stroke="{m:ThemeValue Key=NormalForegroundBrush}"
-                  StrokeThickness="2" />
+            <Grid>
+                <Path Data="{Binding CurrentPuzzlePattern}"
+                      Stretch="Uniform"
+                      Stroke="{m:ThemeValue Key=NormalForegroundBrush}"
+                      StrokeThickness="2">
+                    <Path.Style>
+                        <Style TargetType="Path">
+                            <Setter Property="Opacity" Value="1" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsLoading}" Value="True">
+                                    <Setter Property="Opacity" Value="0.4" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Path.Style>
+                </Path>
+                <mct:BusyIndicator MaxWidth="128"
+                                   MaxHeight="128"
+                                   IsEnabled="{Binding IsLoading}" />
+            </Grid>
         </GroupBox>
 
         <GridSplitter Grid.Column="0"
@@ -37,22 +63,50 @@
 
         <DockPanel Grid.Column="1">
             <GroupBox DockPanel.Dock="Bottom">
-                <StackPanel>
-                    <StackPanel.Resources>
+                <Grid>
+                    <Grid.Resources>
                         <Style BasedOn="{StaticResource {x:Type Button}}" TargetType="Button">
                             <Setter Property="FontSize" Value="14" />
                             <Setter Property="Padding" Value="12,8" />
                         </Style>
-                    </StackPanel.Resources>
-                    <Button Command="{Binding GeneratePuzzlePatternCommand}" Content="Generate Puzzle Pattern" />
-                    <Button Margin="0,10,0,0"
+                    </Grid.Resources>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition Height="10" />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition Width="10" />
+                        <ColumnDefinition Width="auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <Button Grid.Row="0"
+                            Grid.Column="0"
+                            Margin="0"
+                            Command="{Binding GeneratePuzzlePatternCommand}"
+                            Content="Generate Puzzle Pattern" />
+                    <Button Grid.Row="0"
+                            Grid.Column="2"
+                            Width="{Binding RelativeSource={RelativeSource Self}, Path=ActualHeight}"
+                            Padding="8"
+                            Command="{Binding GenerateAndSavePuzzlePatternCommand}"
+                            FontWeight="Normal"
+                            ToolTip="Generate Puzzle Pattern and save to file without displaying...">
+                        <mct:IconPresenter Width="18"
+                                           Height="18"
+                                           Icon="{m:MaterialDesignIcon Icon=Export}" />
+                    </Button>
+
+                    <Button Grid.Row="2"
+                            Grid.ColumnSpan="3"
                             Command="{Binding SavePuzzlePatternCommand}"
-                            Content="Save Puzzle Pattern" />
-                </StackPanel>
+                            Content="Save current Puzzle Pattern" />
+                </Grid>
             </GroupBox>
             <GroupBox Header="Options">
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                    <StackPanel>
+                    <StackPanel IsEnabled="{Binding IsLoading, Converter={StaticResource BoolNegation}}">
                         <StackPanel.Resources>
                             <Style BasedOn="{StaticResource {x:Type Label}}" TargetType="Label">
                                 <Setter Property="Margin" Value="0,5,0,0" />
@@ -106,12 +160,22 @@
                         <Separator />
 
                         <Label Content="Tension" />
-                        <mct:TextBox DecimalPlaces="4"
-                                     Maximum="100"
-                                     Minimum="0"
-                                     NumericValue="{Binding GeneratorOptions.Tension}"
-                                     OnlyNumericValues="True"
-                                     StepSize="0.01"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Slider IsSnapToTickEnabled="True"
+                                    Maximum="1.5"
+                                    Minimum="0"
+                                    TickFrequency="0.01"
+                                    Value="{Binding GeneratorOptions.Tension}" />
+                            <TextBlock Grid.Column="1"
+                                       Width="25"
+                                       Margin="10,0,0,0"
+                                       VerticalAlignment="Center"
+                                       Text="{Binding GeneratorOptions.Tension, StringFormat=0.00}" />
+                        </Grid>
 
                         <CheckBox Content="Create Border" IsChecked="{Binding GeneratorOptions.IsBorderEnabled}" />
                         <CheckBox Content="Randomize bump position" IsChecked="{Binding GeneratorOptions.IsBumpRandomizationEnabled}" />

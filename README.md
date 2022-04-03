@@ -7,7 +7,7 @@ Tool to generate Puzzle patterns.
 ## 🐱‍🏍 Getting Started
 
 1. Download and install [.NET 6.0 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
-2. Download the [latest release](github.com/MaSch0212/puzzle-pattern-generator/releases/latest)
+2. Download the [latest release](https://github.com/MaSch0212/puzzle-pattern-generator/releases/latest)
 3. Unzip the downloaded release
 4. Execute the `PuzzlePatternGenerator.exe`
 5. Profit 🏅
